@@ -46,8 +46,10 @@ jobs:
       - run:
           name: Tag and push
           command: |
-            aws ecr get-login-password --region us-east-1
-            docker login --username AWS --password-stdin 195081218760.dkr.ecr.us-east-1.amazonaws.com
+            login="$(aws ecr get-login --region us-east-1)"
+            ${login}
+            #aws ecr get-login-password --region us-east-1
+            #docker login --username AWS --password-stdin 195081218760.dkr.ecr.us-east-1.amazonaws.com
             docker tag predictions:latest 195081218760.dkr.ecr.us-east-1.amazonaws.com/predictions:latest
             docker push 195081218760.dkr.ecr.us-east-1.amazonaws.com/predictions:latest
 
