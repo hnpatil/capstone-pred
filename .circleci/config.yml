@@ -46,8 +46,6 @@ jobs:
           command: |
             login="$(aws ecr get-login)"
             ${login}
-            #aws ecr get-login-password --region us-east-1
-            #docker login --username AWS --password-stdin 195081218760.dkr.ecr.us-east-1.amazonaws.com
             docker tag predictions:latest 195081218760.dkr.ecr.us-east-1.amazonaws.com/predictions:${CIRCLE_SHA1}
             docker push 195081218760.dkr.ecr.us-east-1.amazonaws.com/predictions:${CIRCLE_SHA1}
 
@@ -64,6 +62,29 @@ jobs:
               --stack-name "predictions" \
               --tags project=predictions
 
+  deploy-backend:
+    docker:
+      - image: python:3.7.3-stretch
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Install Dependencies
+          command: |
+            pip install awscli
+            curl -LO 'https://dl.k8s.io/release/v1.22.0/bin/linux/amd64/kubectl'
+            chmod +x ./kubectl
+            mv ./kubectl /usr/local/bin/kubectl
+      - run:
+          name: Update container image
+          command: |
+            cd .circleci
+            aws eks --region us-east-1 update-kubeconfig --name Predictions
+            chmod 701 make_image.sh
+            ./make_image.sh
+            kubectl apply -k .
+
 workflows:
   default:
     jobs:
@@ -72,3 +93,5 @@ workflows:
           requires: [run-lint]
       - provision-infrastructure:
           requires: [build-image]
+      - deploy-backend:
+          requires: [provision-infrastructure]
