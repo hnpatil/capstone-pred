@@ -28,8 +28,6 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker
-      - add_ssh_keys:
-          fingerprints: ["a4:cf:6f:a9:2f:61:52:64:af:78:e8:7c:cc:8c:78:7a"]
       - run:
           name: Install dependencies
           command: |
@@ -46,7 +44,7 @@ jobs:
       - run:
           name: Tag and push
           command: |
-            login="$(aws ecr get-login --region us-east-1)"
+            login="$(aws ecr get-login)"
             ${login}
             #aws ecr get-login-password --region us-east-1
             #docker login --username AWS --password-stdin 195081218760.dkr.ecr.us-east-1.amazonaws.com
@@ -58,8 +56,6 @@ jobs:
       - image: amazon/aws-cli
     steps:
       - checkout
-      - add_ssh_keys:
-          fingerprints: ["a4:cf:6f:a9:2f:61:52:64:af:78:e8:7c:cc:8c:78:7a"]
       - run:
           name: Ensure infrastructure exists
           command: |
@@ -72,7 +68,7 @@ workflows:
   default:
     jobs:
       - run-lint
-      #- build-image:
-      #    requires: [run-lint]
-      - provision-infrastructure
-          #requires: [build-image]
+      - build-image:
+          requires: [run-lint]
+      - provision-infrastructure:
+          requires: [build-image]
