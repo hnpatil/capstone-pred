@@ -1,16 +1,9 @@
 version: 2.1
 
-python_image: &python_image
-  docker:
-    - image: python:3.7.3-stretch
-  
-aws_cli: &aws_cli
-  docker:
-    - image: amazon/aws-cli
-
 jobs:
   run-lint:
-    <<: *python_image
+    docker:
+      - image: python:3.7.3-stretch
     steps:
       - checkout
       - run:
@@ -30,21 +23,26 @@ jobs:
             make lint
 
   build-image:
-    <<: *python_image
+    docker:
+      - image: docker:17.05.0-ce-git
     steps:
       - checkout
+      - setup_remote_docker
       - add_ssh_keys:
           fingerprints: ["a4:cf:6f:a9:2f:61:52:64:af:78:e8:7c:cc:8c:78:7a"]
       - run:
           name: Install dependencies
           command: |
-            pip install docker-compose
-            pip install awscli
+            apk add --no-cache \
+              py-pip=9.0.0-r1
+            pip install \
+              docker-compose==1.12.0 \
+              awscli==1.11.76
       - run:
           name: Build Docker image
           command: |
             cd src
-            docker build -t app .
+            docker build -t predictions .
       - run:
           name: Tag and push
           command: |
@@ -54,7 +52,8 @@ jobs:
             docker push 195081218760.dkr.ecr.us-east-1.amazonaws.com/predictions:latest
 
   provision-infrastructure:
-    <<: *aws_cli
+    docker:
+      - image: amazon/aws-cli
     steps:
       - checkout
       - add_ssh_keys:
