@@ -3,6 +3,10 @@ version: 2.1
 python_image: &python_image
   docker:
     - image: python:3.7.3-stretch
+  
+aws_cli: &aws_cli
+  docker:
+    - image: amazon/aws-cli
 
 jobs:
   run-lint:
@@ -25,7 +29,52 @@ jobs:
             . venv/bin/activate
             make lint
 
+  build-image:
+    <<: *aws_cli
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            apk add --no-cache \
+              py-pip=9.0.0-r1
+            pip install \
+              docker-compose==1.12.0 \
+              awscli==1.11.76
+
+  provision-infrastructure:
+    <<: *aws_cli
+    steps:
+      - checkout
+      - run:
+          name: Install tar utility
+          command: |
+            yum install -y tar gzip
+      - run:
+          name: Ensure infrastructure exists
+          command: |
+            aws cloudformation deploy \
+              --template-file .circleci/backend.yml \
+              --stack-name "predictions" \
+              --tags project=predictions
+      - run:
+          name: Build Docker image
+          command: |
+            cd src
+            docker build -t app .
+      - run:
+          name: Tag and push
+          command: |
+            aws ecr get-login-password --region us-east-1
+            docker login --username AWS --password-stdin 195081218760.dkr.ecr.us-east-1.amazonaws.com
+            docker tag predictions:latest 195081218760.dkr.ecr.us-east-1.amazonaws.com/predictions:latest
+            docker push 195081218760.dkr.ecr.us-east-1.amazonaws.com/predictions:latest
+
 workflows:
   default:
     jobs:
       - run-lint
+      - build-image:
+          requires: [run-lint]
+      - provision-infrastructure:
+          requires: [build-image]

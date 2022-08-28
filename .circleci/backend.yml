@@ -2,3 +2,27 @@ Description: >
   Predictions backend stack.
 
 Resources:
+  Cluster:
+    Type: AWS::EKS::Cluster
+    Properties: 
+      Name: 'Predictions'
+      RoleArn: 'arn:aws:iam::195081218760:role/AmazonEKSClusterRole'
+      ResourcesVpcConfig:
+        SubnetIds:
+          - subnet-01f4c3cd21058e200
+          - subnet-0753a6010bcf43615
+
+  EKSNodegroup:
+    Type: 'AWS::EKS::Nodegroup'
+    Properties:
+      ClusterName: 'Predictions'
+      NodeRole: 'arn:aws:iam::195081218760:role/EKSWorkerNodeRole'
+      InstanceTypes:
+        - t3.micro
+      ScalingConfig:
+        MinSize: 2
+        DesiredSize: 2
+        MaxSize: 3
+      Subnets:
+        - subnet-01f4c3cd21058e200
+        - subnet-0753a6010bcf43615
