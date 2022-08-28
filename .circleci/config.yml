@@ -50,8 +50,8 @@ jobs:
             ${login}
             #aws ecr get-login-password --region us-east-1
             #docker login --username AWS --password-stdin 195081218760.dkr.ecr.us-east-1.amazonaws.com
-            docker tag predictions:latest 195081218760.dkr.ecr.us-east-1.amazonaws.com/predictions:latest
-            docker push 195081218760.dkr.ecr.us-east-1.amazonaws.com/predictions:latest
+            docker tag predictions:latest 195081218760.dkr.ecr.us-east-1.amazonaws.com/predictions:${CIRCLE_SHA1}
+            docker push 195081218760.dkr.ecr.us-east-1.amazonaws.com/predictions:${CIRCLE_SHA1}
 
   provision-infrastructure:
     docker:
@@ -72,7 +72,7 @@ workflows:
   default:
     jobs:
       - run-lint
-      - build-image:
-          requires: [run-lint]
+      #- build-image:
+      #    requires: [run-lint]
       - provision-infrastructure:
           requires: [build-image]
