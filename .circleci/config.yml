@@ -75,4 +75,4 @@ workflows:
       #- build-image:
       #    requires: [run-lint]
       - provision-infrastructure:
-          requires: [build-image]
+          #requires: [build-image]
